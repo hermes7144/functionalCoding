@@ -1,60 +1,48 @@
-function update(object, key, modify) {
-  var value = object[key];
-  var newValue = modify(value);
-  var newObject = objectSet(object, key, newValue);
-  return newObject;
-}
+class Wrapper {
+  constructor(value) {
+    this._value = value;
+  }
 
-function objectSet(object, key, value) {
-  var copy = Object.assign({}, object);
-  copy[key] = value;
-  return copy;
-}
+  map(f) {
+    return f(this._value);
+  };
 
-function nestedUpdate(object, keys, modify) {
-  if (keys.length === 0)
-    return modify(object);
-  var key1 = keys[0];
-  var restOfKeys = drop_first(keys);
-  return update(object, key1, function (value1) {
-    return nestedUpdate(value1, restOfKeys, modify);
-  });
-}
+  fmap(f) {
+    return new Wrapper(f(this._value))
+  }
 
-function drop_first(array) {
-  var array_copy = array.slice();
-  array_copy.shift();
-  return array_copy;
-}
-
-function updatePostById(category, id, modifyPost) {
-  return nestedUpdate(category, ['posts', id], modifyPost);
-}
-
-function updateAuthor(post, modifyUser) {
-  return update(post, 'author', modifyUser);
-}
-
-function capitalizeUserName(user) {
-  return update(user, 'name', capitalize);
-}
-
-function capitalize(a) {
-  const upperName = a.toUpperCase();
-  console.log(upperName);
-  return upperName;
-}
-
-var blogCategory = {
-  posts: {
-    '11': { author: { name: 'test' } },
-    '12': { author: { name: 'test' } }
+  toString() {
+    return `Wrapper ( ${this._value} )`;
   }
 }
 
-const id = updatePostById(blogCategory, '12', function (post) {
-  return updateAuthor(post, capitalizeUserName);
-});
+const wrap = val => new Wrapper(val);
+
+const wrappedValue = wrap('Get Functional');
+const item = wrappedValue.map(identify);
+console.log(item);
+function identify(item) { return item };
+
+class Empty {
+  map(f) {
+    return this;
+  }
+  fmap(_) {
+    return new Empty();
+  }
+  toString() {
+    return 'Empty ()'
+  }
+}
+const empty = () => new Empty();
+
+const isEven = n => Number.isFinite(n) && (n % 2 === 0);
+const half = val => isEven(val) ? wrap(val / 2) : empty();
+
+const plus3 = n => n + 3;
+
+console.log(half(4).fmap(plus3));
+console.log(half(3));
 
 
-console.log(id['posts']['12']['author']);
+console.log(half(3).map(identify));
